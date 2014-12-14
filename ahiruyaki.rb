@@ -67,15 +67,18 @@ Plugin.create(:ahiruyaki) do
   on_ahiruyaki_stamina_full do
     activity :ahiruyaki_info, "スタミナが全回復しました" end
 
+  on_ahiruyaki_bake do
+    expend_stamina(10) do
+      Service.primary.post message: '#あひる焼き'.freeze
+      Plugin.call :ahiruyaki_baked
+      add_experience 10, 'あひるを焼いた。' end end
+
   command(:ahiruyaki_bake,
           name: 'あひるを焼く',
           condition: lambda{ |opt| stamina >= 1 },
           visible: true,
           role: :timeline) do |opt|
-    expend_stamina(10) do
-      Service.primary.post message: '#あひる焼き'.freeze
-      Plugin.call :ahiruyaki_baked
-      add_experience 10, 'あひるを焼いた。' end end
+    Plugin.call :ahiruyaki_bake end
 
   command(:ahiruyaki_bake_well_done,
           name: 'あひるを焼く（強火）',
