@@ -72,6 +72,16 @@ Plugin.create(:ahiruyaki) do
       Plugin.call :ahiruyaki_baked
       add_experience 10, 'あひるを焼いた。' end end
 
+  command(:ahiruyaki_bake_well_done,
+          name: 'あひるを焼く（強火）',
+          condition: lambda{ |opt| stamina >= stamina_max },
+          visible: true,
+          role: :timeline) do |opt|
+    expend_stamina(stamina) do
+      Service.primary.post message: "#あひる焼き\n\nhttp://d250g2.com".freeze
+      Plugin.call :ahiruyaki_baked
+      add_experience 100, '強火であひるを焼いた。' end end
+
   def stamina
     [stamina_nocap, stamina_max].min end
 
