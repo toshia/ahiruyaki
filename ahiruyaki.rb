@@ -23,8 +23,8 @@ Plugin.create(:ahiruyaki) do
   on_appear do |messages|
     messages.lazy.reject(&:from_me?).select{ |message|
       message[:created] > defined_time
-    }.select{ |message|
-      message.to_s.include? 'あひる焼き'.freeze
+    }.select { |message|
+      message.to_s.include? 'あひる焼き'||'ahiruyaki'.freeze
     }.each do |baking_message|
       expend_stamina(1) do
         baking_message.favorite
@@ -39,7 +39,7 @@ Plugin.create(:ahiruyaki) do
     }.select { |message|
       message.replyto_source.from_me?
     }.select { |message|
-      message.replyto_source.to_s.include? 'あひる焼き'.freeze
+      message.replyto_source.to_s.include? 'あひる焼き'||'ahiruyaki'.freeze
     }.each do |message|
       exp = (message[:created] - message.replyto_source[:created]) * 10 + 10
       add_experience exp, "あひるを焼くなと言われた。" end
