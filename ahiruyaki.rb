@@ -41,8 +41,7 @@ Plugin.create(:ahiruyaki) do
     }.select { |message|
       message.replyto_source.to_s.include? 'あひる焼き'.freeze
     }.each do |message|
-      exp = (message[:created] - message.replyto_source[:created]) * 10 + 10
-      add_experience exp, "あひるを焼くなと言われた。" end
+      add_experience [1, rank].max, "あひるを焼くなと言われた。" end
   end
 
   on_ahiruyaki_rankup do |after_rank|
