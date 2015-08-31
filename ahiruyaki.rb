@@ -10,6 +10,7 @@ module Plugin::Ahiruyaki
       c = a + b/2
       yielder << c
       a, b = c, a end end
+  PATTERN = Regexp.union(%w<あひる焼き ahiruyaki>)
 end
 
 Plugin.create(:ahiruyaki) do
@@ -24,7 +25,7 @@ Plugin.create(:ahiruyaki) do
     messages.lazy.reject(&:from_me?).select{ |message|
       message[:created] > defined_time
     }.select{ |message|
-      message.to_s.include? 'あひる焼き'.freeze
+      Plugin::Ahiruyaki::PATTERN.match(message.to_s)
     }.each do |baking_message|
       expend_stamina(1) do
         baking_message.favorite
@@ -39,7 +40,7 @@ Plugin.create(:ahiruyaki) do
     }.select { |message|
       message.replyto_source.from_me?
     }.select { |message|
-      message.replyto_source.to_s.include? 'あひる焼き'.freeze
+      Plugin::Ahiruyaki::PATTERN.match(message.replyto_source.to_s)
     }.each do |message|
       exp = (message[:created] - message.replyto_source[:created]) * 10 + 10
       add_experience exp, "あひるを焼くなと言われた。" end
