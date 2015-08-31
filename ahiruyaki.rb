@@ -89,7 +89,7 @@ Plugin.create(:ahiruyaki) do
     stamina_max - (UserConfig[:ahiruyaki_stamina_recover_time] - Time.new) / Plugin::Ahiruyaki::STAMINA_RECOVER_SEC end
 
   # スタミナ値を _expend_ だけ消費してブロック内を実行する。ブロックの実行結果を返す。
-  # スタミナが足りない場合はブロックを実行しnilを返す。
+  # スタミナが足りない場合はブロックを実行せずnilを返す。
   def expend_stamina(expend)
     if stamina >= expend
       result = yield
