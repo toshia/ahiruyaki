@@ -17,6 +17,7 @@ Plugin.create(:ahiruyaki) do
 
   UserConfig[:ahiruyaki_stamina_recover_time] ||= Time.new
   UserConfig[:ahiruyaki_exp] ||= 0
+  strong_fire = Set.new()
 
   defactivity "ahiruyaki", 'あひる焼き'
   defactivity "ahiruyaki_info", 'あひる焼き（情報）'
@@ -42,8 +43,11 @@ Plugin.create(:ahiruyaki) do
     }.select { |message|
       Plugin::Ahiruyaki::PATTERN.match(message.replyto_source.to_s)
     }.each do |message|
-      exp = (message[:created] - message.replyto_source[:created]) * 10 + 10
-      add_experience exp, "あひるを焼くなと言われた。" end
+      if strong_fire.include? message.replyto_source.id
+        add_experience [1, rank ** 1.5].max, "あひるを焼くなと言われた。\n強火ボーナス！"
+        strong_fire.delete(message.id)
+      else
+        add_experience [1, rank].max, "あひるを焼くなと言われた。" end end
   end
 
   on_ahiruyaki_rankup do |after_rank|
@@ -73,6 +77,17 @@ Plugin.create(:ahiruyaki) do
       Plugin.call :ahiruyaki_baked
       add_experience 10, 'あひるを焼いた。' end end
 
+  command(:ahiruyaki_bake_well_done,
+          name: 'あひるを焼く（強火）',
+          condition: lambda{ |opt| stamina >= stamina_max and rank >= 20 },
+          visible: true,
+          role: :timeline) do |opt|
+    expend_stamina(stamina) do
+      Service.primary.post(message: "#あひる焼き\n\nhttp://d250g2.com".freeze).next do |message|
+        notice "bake well done: #{message.inspect}"
+        strong_fire << message.id end
+      Plugin.call :ahiruyaki_baked end end
+
   def stamina
     [stamina_nocap, stamina_max].min end
 
@@ -80,7 +95,7 @@ Plugin.create(:ahiruyaki) do
     stamina_max - (UserConfig[:ahiruyaki_stamina_recover_time] - Time.new) / Plugin::Ahiruyaki::STAMINA_RECOVER_SEC end
 
   # スタミナ値を _expend_ だけ消費してブロック内を実行する。ブロックの実行結果を返す。
-  # スタミナが足りない場合はブロックを実行しnilを返す。
+  # スタミナが足りない場合はブロックを実行せずnilを返す。
   def expend_stamina(expend)
     if stamina >= expend
       result = yield
