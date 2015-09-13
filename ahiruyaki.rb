@@ -12,58 +12,6 @@ module Plugin::Ahiruyaki
       yielder << c
       a, b = c, a end end
   PATTERN = Regexp.union(%w<あひる焼き ahiruyaki>)
-
-  # 現在のランクを表示するラベル
-  # ==== Return
-  # Gtk::Label ランクを表示しているラベル
-  def rank_label
-    @rank_label ||= Gtk::Label.new() end
-
-  # 現在のスタミナ値を示すプログレスバー
-  # ==== Return
-  # progressbar
-  def exp_progressbar
-    @exp_progressbar ||= Gtk::ProgressBar.new()
-                       .set_fraction(0.0)
-                       .set_orientation(Gtk::ProgressBar::LEFT_TO_RIGHT)
-  end
-
-  # 現在のスタミナ値を表示するラベル
-  # ==== Return
-  # Gtk::Label ランクを表示しているラベル
-  def stamina_value_label
-    @stamina_value_label ||= Gtk::Label.new() end
-
-  # スタミナ値の最大を表示するラベル
-  # ==== Return
-  # Gtk::Label ランクを表示しているラベル
-  def stamina_max_label
-    @stamina_max_label ||= Gtk::Label.new() end
-
-  # 現在のスタミナ値を示すプログレスバー
-  # ==== Return
-  # progressbar
-  def stamina_progressbar
-    @stamina_progressbar ||= Gtk::ProgressBar.new()
-                           .set_fraction(0.0)
-                           .set_orientation(Gtk::ProgressBar::LEFT_TO_RIGHT)
-  end
-
-  def rank_widget
-    @rank_widget ||= Gtk::HBox.new.tap do |container|
-      container
-        .closeup(Gtk::Label.new('あひる焼きランク'))
-        .add(exp_progressbar)
-        .closeup(rank_label) end end
-
-  def stamina_widget
-    @stamina_widget ||= Gtk::HBox.new.tap do |container|
-      container
-        .closeup(Gtk::Label.new('スタミナ'))
-        .add(stamina_progressbar)
-        .closeup(stamina_value_label)
-        .closeup(Gtk::Label.new('/'))
-        .closeup(stamina_max_label) end end
 end
 
 Plugin.create(:ahiruyaki) do
@@ -75,19 +23,12 @@ Plugin.create(:ahiruyaki) do
   defactivity "ahiruyaki", 'あひる焼き'
   defactivity "ahiruyaki_info", 'あひる焼き（情報）'
 
-  tab(:ahiruyaki_status, "あひる焼き") do
-    set_icon File.join(__dir__, 'icon.png')
-    nativewidget Gtk::VBox.new
-                  .closeup(Plugin::Ahiruyaki.rank_widget)
-                  .closeup(Plugin::Ahiruyaki.stamina_widget)
-  end
-
   Delayer.new do
-    Plugin::Ahiruyaki.rank_label.text = rank.to_s
-    Plugin::Ahiruyaki.stamina_value_label.text = '%i'.freeze % stamina
-    Plugin::Ahiruyaki.stamina_max_label.text = stamina_max.to_s
-    Plugin::Ahiruyaki.stamina_progressbar.fraction = stamina.to_f / stamina_max
-    Plugin::Ahiruyaki.exp_progressbar.fraction = (UserConfig[:ahiruyaki_exp] - exp()).to_f / (exp(rank+1) - exp())
+    rank_label.text = rank.to_s
+    stamina_value_label.text = '%i'.freeze % stamina
+    stamina_max_label.text = stamina_max.to_s
+    stamina_progressbar.fraction = stamina.to_f / stamina_max
+    exp_progressbar.fraction = (UserConfig[:ahiruyaki_exp] - exp()).to_f / (exp(rank+1) - exp())
     rewind_stamina
   end
 
@@ -123,15 +64,15 @@ Plugin.create(:ahiruyaki) do
     if after_rank == rank
       UserConfig[:ahiruyaki_stamina_recover_time] = Time.new
       Plugin.call :ahiruyaki_stamina_changed, stamina
-      Plugin::Ahiruyaki.rank_label.text = after_rank.to_s
-      Plugin::Ahiruyaki.stamina_max_label.text = stamina_max.to_s
-      Plugin::Ahiruyaki.exp_progressbar.fraction = (UserConfig[:ahiruyaki_exp] - exp()).to_f / (exp(rank+1) - exp())
+      rank_label.text = after_rank.to_s
+      stamina_max_label.text = stamina_max.to_s
+      exp_progressbar.fraction = (UserConfig[:ahiruyaki_exp] - exp()).to_f / (exp(rank+1) - exp())
     end
   end
 
   on_ahiruyaki_stamina_changed do |_stamina|
-    Plugin::Ahiruyaki.stamina_value_label.text = '%i'.freeze % stamina
-    Plugin::Ahiruyaki.stamina_progressbar.fraction = stamina.to_f / stamina_max
+    stamina_value_label.text = '%i'.freeze % stamina
+    stamina_progressbar.fraction = stamina.to_f / stamina_max
     if _stamina >= stamina_max
       Reserver.new(UserConfig[:ahiruyaki_stamina_recover_time]) do
         Plugin.call :ahiruyaki_stamina_full if stamina >= stamina_max end
@@ -140,12 +81,12 @@ Plugin.create(:ahiruyaki) do
     activity :ahiruyaki_info, "スタミナ #{stamina.to_i}/#{stamina_max} 全回復時刻 #{UserConfig[:ahiruyaki_stamina_recover_time]}" end
 
   on_ahiruyaki_stamina_recover do |stamina|
-    Plugin::Ahiruyaki.stamina_value_label.text = '%i'.freeze % stamina
-    Plugin::Ahiruyaki.stamina_progressbar.fraction = stamina.to_f / stamina_max
+    stamina_value_label.text = '%i'.freeze % stamina
+    stamina_progressbar.fraction = stamina.to_f / stamina_max
     rewind_stamina end
 
   on_ahiruyaki_stamina_full do
-    Plugin::Ahiruyaki.stamina_value_label.text = '%i'.freeze % stamina
+    stamina_value_label.text = '%i'.freeze % stamina
    activity :ahiruyaki_info, "スタミナが全回復しました" end
 
   on_ahiruyaki_bake do
@@ -209,7 +150,7 @@ Plugin.create(:ahiruyaki) do
       Plugin.call(:ahiruyaki_rankup, rank_after)
     else
       activity :ahiruyaki, "#{flash} #{increase.to_i} 経験値獲得"
-      Plugin::Ahiruyaki.exp_progressbar.fraction = (UserConfig[:ahiruyaki_exp] - exp()).to_f / (exp(rank+1) - exp())
+      exp_progressbar.fraction = (UserConfig[:ahiruyaki_exp] - exp()).to_f / (exp(rank+1) - exp())
     end
   end
 
@@ -224,4 +165,60 @@ Plugin.create(:ahiruyaki) do
     else
       Plugin::Ahiruyaki::RANK_TABLE.take(_rank - 1).last end end
 
+### Widgets
+
+  # 現在のランクを表示するラベル
+  # ==== Return
+  # Gtk::Label ランクを表示しているラベル
+  def rank_label
+    @rank_label ||= Gtk::Label.new() end
+
+  # 現在のスタミナ値を示すプログレスバー
+  # ==== Return
+  # progressbar
+  def exp_progressbar
+    @exp_progressbar ||= Gtk::ProgressBar.new()
+                       .set_fraction(0.0)
+                       .set_orientation(Gtk::ProgressBar::LEFT_TO_RIGHT)
+  end
+
+  # 現在のスタミナ値を表示するラベル
+  # ==== Return
+  # Gtk::Label ランクを表示しているラベル
+  def stamina_value_label
+    @stamina_value_label ||= Gtk::Label.new() end
+
+  # スタミナ値の最大を表示するラベル
+  # ==== Return
+  # Gtk::Label ランクを表示しているラベル
+  def stamina_max_label
+    @stamina_max_label ||= Gtk::Label.new() end
+
+  # 現在のスタミナ値を示すプログレスバー
+  # ==== Return
+  # progressbar
+  def stamina_progressbar
+    @stamina_progressbar ||= Gtk::ProgressBar.new()
+                           .set_fraction(0.0)
+                           .set_orientation(Gtk::ProgressBar::LEFT_TO_RIGHT)
+  end
+
+  container = Gtk::VBox.new
+              .closeup(Gtk::Table.new(4, 2)
+                        .attach(Gtk::Label.new('経験値').right, 0,1,0,1)
+                        .attach(exp_progressbar, 1,2,0,1)
+                        .attach(Gtk::Label.new('ランク').right, 2,3,0,1)
+                        .attach(rank_label.left, 3,4,0,1)
+                        .attach(Gtk::Label.new('スタミナ').right, 0,1,1,2)
+                        .attach(stamina_progressbar, 1,2,1,2)
+                        .attach(Gtk::HBox.new()
+                                 .closeup(stamina_value_label)
+                                 .closeup(Gtk::Label.new('/'))
+                                 .closeup(stamina_max_label).center, 2,4,1,2)
+                      )
+
+  tab(:ahiruyaki_status, "あひる焼き") do
+    set_icon File.join(__dir__, 'icon.png')
+    nativewidget container
+  end
 end
