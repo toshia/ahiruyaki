@@ -76,7 +76,7 @@ Plugin.create(:ahiruyaki) do
   defactivity "ahiruyaki_info", 'あひる焼き（情報）'
 
   tab(:ahiruyaki_status, "あひる焼き") do
-    #set_icon
+    set_icon File.join(__dir__, 'icon.png')
     nativewidget Gtk::VBox.new
                   .closeup(Plugin::Ahiruyaki.rank_widget)
                   .closeup(Plugin::Ahiruyaki.stamina_widget)
