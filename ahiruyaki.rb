@@ -18,6 +18,7 @@ Plugin.create(:ahiruyaki) do
 
   UserConfig[:ahiruyaki_stamina_recover_time] ||= Time.new
   UserConfig[:ahiruyaki_exp] ||= 0
+  UserConfig[:ahiruyaki_stone] ||= 0
   strong_fire = Set.new()
 
   defactivity "ahiruyaki", 'あひる焼き'
@@ -29,8 +30,11 @@ Plugin.create(:ahiruyaki) do
     stamina_max_label.text = stamina_max.to_s
     stamina_progressbar.fraction = stamina.to_f / stamina_max
     exp_progressbar.fraction = (UserConfig[:ahiruyaki_exp] - exp()).to_f / (exp(rank+1) - exp())
+    stone_label.text = stone.to_s
     rewind_stamina
-  end
+    unless at(:is_stone_gave)
+      store(:is_stone_gave, true)
+      add_stone(rank, nil) end end
 
   on_appear do |messages|
     messages.lazy.reject(&:from_me?).select{ |message|
@@ -64,6 +68,7 @@ Plugin.create(:ahiruyaki) do
     if after_rank == rank
       UserConfig[:ahiruyaki_stamina_recover_time] = Time.new
       Plugin.call :ahiruyaki_stamina_changed, stamina
+      add_stone(1, "ランクアップボーナス！")
       rank_label.text = after_rank.to_s
       stamina_max_label.text = stamina_max.to_s
       exp_progressbar.fraction = (UserConfig[:ahiruyaki_exp] - exp()).to_f / (exp(rank+1) - exp())
@@ -94,6 +99,9 @@ Plugin.create(:ahiruyaki) do
       Service.primary.post message: '#あひる焼き'.freeze
       Plugin.call :ahiruyaki_baked
       add_experience 10, 'あひるを焼いた。' end end
+
+  on_ahiruyaki_stone_changed do |stone|
+    stone_label.text = stone.to_s end
 
   command(:ahiruyaki_bake,
           name: 'あひるを焼く',
@@ -165,6 +173,15 @@ Plugin.create(:ahiruyaki) do
     else
       Plugin::Ahiruyaki::RANK_TABLE.take(_rank - 1).last end end
 
+  def stone
+    (UserConfig[:ahiruyaki_stone] || 0).to_i end
+
+  def add_stone(increase, flash)
+    if 0 < increase.to_i
+      UserConfig[:ahiruyaki_stone] = stone + increase.to_i
+      activity :ahiruyaki, "#{flash ? flash + "\n" : ""}魔法石を #{increase.to_i}個手に入れた！"
+      Plugin.call(:ahiruyaki_stone_changed, stone) end end
+
 ### Widgets
 
   # 現在のランクを表示するラベル
@@ -203,12 +220,20 @@ Plugin.create(:ahiruyaki) do
                            .set_orientation(Gtk::ProgressBar::LEFT_TO_RIGHT)
   end
 
+  # 魔法石の数を表示するラベル
+  # ==== Return
+  # Gtk::Label ランクを表示しているラベル
+  def stone_label
+    @stone_label ||= Gtk::Label.new() end
+
   container = Gtk::VBox.new
-              .closeup(Gtk::Table.new(4, 2)
+              .closeup(Gtk::Table.new(6, 2)
                         .attach(Gtk::Label.new('経験値').right, 0,1,0,1)
                         .attach(exp_progressbar, 1,2,0,1)
                         .attach(Gtk::Label.new('ランク').right, 2,3,0,1)
                         .attach(rank_label.left, 3,4,0,1)
+                        .attach(Gtk::Label.new('魔法石').right, 4,5,0,1)
+                        .attach(stone_label.left, 5,6,0,1)
                         .attach(Gtk::Label.new('スタミナ').right, 0,1,1,2)
                         .attach(stamina_progressbar, 1,2,1,2)
                         .attach(Gtk::HBox.new()
