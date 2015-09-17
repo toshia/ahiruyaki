@@ -106,6 +106,11 @@ EOE
                title: "めっちゃ強火",
                icon: File.join(__dir__, 'welldone.png'))
 
+  defahiruyaki(:friendly_fire,
+               price: 1,
+               title: "フレンドリーファイア",
+               icon: Skin.get('unfav.png'))
+
   on_appear do |messages|
     messages.lazy.reject(&:from_me?).select{ |message|
       message[:created] > defined_time
@@ -114,7 +119,7 @@ EOE
     }.each do |baking_message|
       expend_stamina(1) do
         baking_message.favorite
-        add_experience 1, "#{baking_message.user[:name]} さんがあひるを焼いた。" end end
+        add_experience [1, 1+at(:friendly_fire, 0)].max, "#{baking_message.user[:name]} さんがあひるを焼いた。" end end
   end
 
   on_mention do |service, messages|
