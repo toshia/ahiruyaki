@@ -75,7 +75,9 @@ Plugin.create(:ahiruyaki) do
       @#{m_button.to_s} ||= Gtk::Button.new()
                                   .add(Gtk::HBox.new()
                                         .closeup(Gtk::Image.new(Gdk::Pixbuf.new('#{icon}', 64, 64)))
-                                        .add(Gtk::Label.new('#{title}').left)
+                                        .add(Gtk::VBox.new
+                                              .closeup(Gtk::Label.new('#{title}').left)
+                                              .closeup(Gtk::Label.new('魔法石 x #{price.to_s}').left))
                                         .closeup(#{m_label.to_s}.right)) end
 
     # 強さを表示するラベル
