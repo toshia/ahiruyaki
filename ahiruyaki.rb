@@ -32,11 +32,74 @@ Plugin.create(:ahiruyaki) do
     exp_progressbar.fraction = (UserConfig[:ahiruyaki_exp] - exp()).to_f / (exp(rank+1) - exp())
     stone_label.text = stone.to_s
     rewind_stamina
-    self.ahiruyaki_power_label = at(:ahiruyaki_power, 0).to_s
-    ahiruyaki_powerup_button.sensitive = (stone >= 1)
     unless at(:is_stone_gave)
       store(:is_stone_gave, true)
       add_stone(rank, nil) end end
+
+  # ユニットを定義する。ユニットを購入可能にする。
+  # ==== Args
+  # [name] Symbol 識別名
+  # [price] Fixnum 価格。一段階アップグレードするのにこれだけの魔法石が必要になる
+  # [icon] String アイコン画像のパス
+  # [title] String 表示名。UI上にはこの名前で表示される
+  defdsl :defahiruyaki do |name, price: 1, icon: fail, title: name.to_s|
+    e_increase = :"ahiruyaki_#{name}"
+    m_label = :"#{name}_label"
+    m_modify_label = :"#{name}_label="
+    m_button = :"#{name}_button"
+    k_value = name.to_sym
+
+    Delayer.new do
+      self.__send__(m_modify_label, at(k_value, 0).to_s)
+      self.__send__(m_button).sensitive = (stone >= price) end
+
+    # あひる焼き強化ボタンの更新
+    on_ahiruyaki_stone_changed do |stone|
+      self.__send__(m_button).sensitive = (stone >= price) end
+
+    # ボタンがクリックされるなど、魔法石を消費して強化する
+    add_event(e_increase) do
+      expend_stone(1) do
+        store(k_value, 1 + at(k_value, 0))
+        self.__send__(m_modify_label, at(k_value, 0).to_s) end end
+
+    filter_ahiruyaki_unit do |container|
+      container << self.__send__(m_button)
+      [container] end
+
+    eval(<<EOE)
+    # 強化ボタンを返す
+    # ==== Return
+    # Gtk::Button
+    def #{m_button.to_s}
+      @#{m_button.to_s} ||= Gtk::Button.new()
+                                  .add(Gtk::HBox.new()
+                                        .closeup(Gtk::Image.new(Gdk::Pixbuf.new('#{icon}', 64, 64)))
+                                        .add(Gtk::Label.new('#{title}').left)
+                                        .closeup(#{m_label.to_s}.right)) end
+
+    # 強さを表示するラベル
+    # ==== Return
+    # Gtk::Label
+    def #{m_label.to_s}
+      @#{m_label.to_s} ||= Gtk::Label.new().set_use_markup(true) end
+
+    # 表示されている強さを更新する
+    # ==== Args
+    # [power] 強さ
+    def #{m_modify_label}(power)
+      #{m_label.to_s}.set_markup(%q<<span size="%{size}">%{value}</span>> % {value: power.to_s, size: #{53 * 1024}})
+      power end
+EOE
+
+    self.__send__(m_button).ssc(:clicked) do
+      Plugin.call(e_increase)
+      false end
+  end
+
+  defahiruyaki(:ahiruyaki_power,
+               title: "あひる焼き強化",
+               icon: File.join(__dir__, 'ahiru.png'))
 
   on_appear do |messages|
     messages.lazy.reject(&:from_me?).select{ |message|
@@ -105,15 +168,6 @@ Plugin.create(:ahiruyaki) do
   # 魔法石所持数の表示を更新
   on_ahiruyaki_stone_changed do |stone|
     stone_label.text = stone.to_s end
-
-  # あひる焼き強化ボタンの更新
-  on_ahiruyaki_stone_changed do |stone|
-    ahiruyaki_powerup_button.sensitive = (stone >= 1) end
-
-  on_ahiruyaki_ahiruyaki_powerup do
-    expend_stone(1) do
-      store(:ahiruyaki_power, 1 + at(:ahiruyaki_power, 0))
-      self.ahiruyaki_power_label = at(:ahiruyaki_power, 0).to_s end end
 
   command(:ahiruyaki_bake,
           name: 'あひるを焼く',
@@ -241,29 +295,6 @@ Plugin.create(:ahiruyaki) do
                            .set_fraction(0.0)
                            .set_orientation(Gtk::ProgressBar::LEFT_TO_RIGHT) end
 
-  # あひる焼きを強くするボタンを返す
-  # ==== Return
-  # Gtk::Button
-  def ahiruyaki_powerup_button
-    @ahiruyaki_powerup_button ||= Gtk::Button.new()
-                                .add(Gtk::HBox.new()
-                                      .closeup(Gtk::Image.new(Gdk::Pixbuf.new(File.join(__dir__, 'ahiru.png'), 64, 64)))
-                                      .add(Gtk::Label.new("あひる焼き強化").left)
-                                      .closeup(ahiruyaki_power_label.right)) end
-
-  # あひる焼きの強さを表示するラベル
-  # ==== Return
-  # Gtk::Label
-  def ahiruyaki_power_label
-    @ahiruyaki_power_label ||= Gtk::Label.new().set_use_markup(true) end
-
-  # あひる焼きの強さを表示する
-  # ==== Args
-  # [power] 強さ
-  def ahiruyaki_power_label=(power)
-    ahiruyaki_power_label.set_markup(%q<<span size="%{size}">%{value}</span>> % {value: power.to_s, size: 53 * 1024})
-    power end
-
   # 魔法石の数を表示するラベル
   # ==== Return
   # Gtk::Label ランクを表示しているラベル
@@ -286,12 +317,8 @@ Plugin.create(:ahiruyaki) do
                                  .closeup(stamina_max_label).center, 2,4,1,2)
                       )
               .add(Gtk::ScrolledWindow.new
-                    .add_with_viewport(Gtk::VBox.new
-                                        .closeup(ahiruyaki_powerup_button)))
-
-  ahiruyaki_powerup_button.ssc(:clicked) do
-    Plugin.call(:ahiruyaki_ahiruyaki_powerup)
-    false end
+                    .add_with_viewport(Gtk::VBox.new.tap{|c|
+                                         Plugin.filtering(:ahiruyaki_unit, []).first.each(&c.method(:closeup))}))
 
   tab(:ahiruyaki_status, "あひる焼き") do
     set_icon File.join(__dir__, 'icon.png')
