@@ -101,6 +101,11 @@ EOE
                title: "あひる焼き強化",
                icon: File.join(__dir__, 'ahiru.png'))
 
+  defahiruyaki(:ahiruyaki_welldone,
+               price: 5,
+               title: "めっちゃ強火",
+               icon: File.join(__dir__, 'welldone.png'))
+
   on_appear do |messages|
     messages.lazy.reject(&:from_me?).select{ |message|
       message[:created] > defined_time
@@ -123,10 +128,10 @@ EOE
       Plugin::Ahiruyaki::PATTERN.match(message.replyto_source.to_s)
     }.each do |message|
       if strong_fire.include? message.replyto_source.id
-        add_experience [1, rank ** 1.5].max, "あひるを焼くなと言われた。\n強火ボーナス！"
+        add_experience [1, at(:ahiruyaki_welldone, 0), rank ** (1.5 + at(:ahiruyaki_welldone, 0)*0.0625)].max, "あひるを焼くなと言われた。\n強火ボーナス！"
         strong_fire.delete(message.id)
       else
-        add_experience [1, at(:ahiruyaki_power, 0), rank ** (1 + at(:ahiruyaki_power, 0)*0.01)].max, "あひるを焼くなと言われた。" end end
+        add_experience [1, at(:ahiruyaki_power, 0), rank ** (1 + at(:ahiruyaki_power, 0)*0.015625)].max, "あひるを焼くなと言われた。" end end
   end
 
   on_ahiruyaki_rankup do |after_rank|
