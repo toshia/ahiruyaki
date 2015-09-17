@@ -32,6 +32,8 @@ Plugin.create(:ahiruyaki) do
     exp_progressbar.fraction = (UserConfig[:ahiruyaki_exp] - exp()).to_f / (exp(rank+1) - exp())
     stone_label.text = stone.to_s
     rewind_stamina
+    self.ahiruyaki_power_label = at(:ahiruyaki_power, 0).to_s
+    ahiruyaki_powerup_button.sensitive = (stone >= 1)
     unless at(:is_stone_gave)
       store(:is_stone_gave, true)
       add_stone(rank, nil) end end
@@ -61,7 +63,7 @@ Plugin.create(:ahiruyaki) do
         add_experience [1, rank ** 1.5].max, "あひるを焼くなと言われた。\n強火ボーナス！"
         strong_fire.delete(message.id)
       else
-        add_experience [1, rank].max, "あひるを焼くなと言われた。" end end
+        add_experience [1, at(:ahiruyaki_power, 0), rank ** (1 + at(:ahiruyaki_power, 0)*0.01)].max, "あひるを焼くなと言われた。" end end
   end
 
   on_ahiruyaki_rankup do |after_rank|
@@ -100,8 +102,18 @@ Plugin.create(:ahiruyaki) do
       Plugin.call :ahiruyaki_baked
       add_experience 10, 'あひるを焼いた。' end end
 
+  # 魔法石所持数の表示を更新
   on_ahiruyaki_stone_changed do |stone|
     stone_label.text = stone.to_s end
+
+  # あひる焼き強化ボタンの更新
+  on_ahiruyaki_stone_changed do |stone|
+    ahiruyaki_powerup_button.sensitive = (stone >= 1) end
+
+  on_ahiruyaki_ahiruyaki_powerup do
+    expend_stone(1) do
+      store(:ahiruyaki_power, 1 + at(:ahiruyaki_power, 0))
+      self.ahiruyaki_power_label = at(:ahiruyaki_power, 0).to_s end end
 
   command(:ahiruyaki_bake,
           name: 'あひるを焼く',
@@ -176,6 +188,16 @@ Plugin.create(:ahiruyaki) do
   def stone
     (UserConfig[:ahiruyaki_stone] || 0).to_i end
 
+  # 魔法石を _expend_ だけ消費してブロック内を実行する。ブロックの実行結果を返す。
+  # 魔法石が足りない場合はブロックを実行せずnilを返す。
+  def expend_stone(expend)
+    if stone >= expend
+      modified = stone - expend
+      UserConfig[:ahiruyaki_stone] = modified
+      result = yield
+      Plugin.call :ahiruyaki_stone_changed, modified
+      result end end
+
   def add_stone(increase, flash)
     if 0 < increase.to_i
       UserConfig[:ahiruyaki_stone] = stone + increase.to_i
@@ -217,8 +239,30 @@ Plugin.create(:ahiruyaki) do
   def stamina_progressbar
     @stamina_progressbar ||= Gtk::ProgressBar.new()
                            .set_fraction(0.0)
-                           .set_orientation(Gtk::ProgressBar::LEFT_TO_RIGHT)
-  end
+                           .set_orientation(Gtk::ProgressBar::LEFT_TO_RIGHT) end
+
+  # あひる焼きを強くするボタンを返す
+  # ==== Return
+  # Gtk::Button
+  def ahiruyaki_powerup_button
+    @ahiruyaki_powerup_button ||= Gtk::Button.new()
+                                .add(Gtk::HBox.new()
+                                      .closeup(Gtk::Image.new(Gdk::Pixbuf.new(File.join(__dir__, 'ahiru.png'), 64, 64)))
+                                      .add(Gtk::Label.new("あひる焼き強化").left)
+                                      .closeup(ahiruyaki_power_label.right)) end
+
+  # あひる焼きの強さを表示するラベル
+  # ==== Return
+  # Gtk::Label
+  def ahiruyaki_power_label
+    @ahiruyaki_power_label ||= Gtk::Label.new().set_use_markup(true) end
+
+  # あひる焼きの強さを表示する
+  # ==== Args
+  # [power] 強さ
+  def ahiruyaki_power_label=(power)
+    ahiruyaki_power_label.set_markup(%q<<span size="%{size}">%{value}</span>> % {value: power.to_s, size: 53 * 1024})
+    power end
 
   # 魔法石の数を表示するラベル
   # ==== Return
@@ -241,6 +285,13 @@ Plugin.create(:ahiruyaki) do
                                  .closeup(Gtk::Label.new('/'))
                                  .closeup(stamina_max_label).center, 2,4,1,2)
                       )
+              .add(Gtk::ScrolledWindow.new
+                    .add_with_viewport(Gtk::VBox.new
+                                        .closeup(ahiruyaki_powerup_button)))
+
+  ahiruyaki_powerup_button.ssc(:clicked) do
+    Plugin.call(:ahiruyaki_ahiruyaki_powerup)
+    false end
 
   tab(:ahiruyaki_status, "あひる焼き") do
     set_icon File.join(__dir__, 'icon.png')
