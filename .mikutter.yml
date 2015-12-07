@@ -3,7 +3,7 @@ slug: :ahiruyaki
 depends:
   mikutter: 3.1.0
   plugin: [activity]
-version: '1.1'
+version: '1.2'
 author: toshi_a
 name: 帰ってきたあひる焼きゲーム
 description: "あの #あひる焼き がソーシャルゲームになって帰ってきた！"
