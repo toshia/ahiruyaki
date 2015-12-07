@@ -11,11 +11,7 @@ module Plugin::Ahiruyaki
       c = a + b/2
       yielder << c
       a, b = c, a end end
-<<<<<<< HEAD
-  PATTERN = Regexp.union(%w<あひる焼き Ahiruyaki>)
-=======
-  PATTERN = Regexp.union(%w<あひる焼き ahiruyaki 扒家鸭>)
->>>>>>> upstream/master
+  PATTERN = Regexp.union(%w<あひる焼き Ahiruyaki 扒家鸭>)
 end
 
 Plugin.create(:ahiruyaki) do
