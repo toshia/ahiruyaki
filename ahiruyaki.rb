@@ -111,7 +111,7 @@ EOE
   defahiruyaki(:friendly_fire,
                price: 1,
                title: "フレンドリーファイア",
-               icon: Skin.get('unfav.png'))
+               icon: Skin.get_path('unfav.png'))
 
   on_appear do |messages|
     messages.lazy.reject(&:from_me?).select{ |message|
