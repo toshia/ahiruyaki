@@ -130,7 +130,7 @@ EOE
     }.select{ |message|
       Plugin::Ahiruyaki::AHIRU_ID == message.user.id
     }.select { |message|
-      message.replyto_source.from_me?
+      message.replyto_source.from_me? unless message.replyto_source.nil?
     }.select { |message|
       Plugin::Ahiruyaki::PATTERN.match(message.replyto_source.to_s)
     }.each do |message|
