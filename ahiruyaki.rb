@@ -19,7 +19,7 @@ Plugin.create(:ahiruyaki) do
   UserConfig[:ahiruyaki_stamina_recover_time] ||= Time.new
   UserConfig[:ahiruyaki_exp] ||= 0
   UserConfig[:ahiruyaki_stone] ||= 0
-  strong_fire = Set.new()
+  strong_fire = Set.new
 
   defactivity "ahiruyaki", 'あひる焼き'
   defactivity "ahiruyaki_info", 'あひる焼き（情報）'
@@ -29,7 +29,7 @@ Plugin.create(:ahiruyaki) do
     stamina_value_label.text = '%i'.freeze % stamina
     stamina_max_label.text = stamina_max.to_s
     stamina_progressbar.fraction = stamina.to_f / stamina_max
-    exp_progressbar.fraction = (UserConfig[:ahiruyaki_exp] - exp()).to_f / (exp(rank+1) - exp())
+    exp_progressbar.fraction = (UserConfig[:ahiruyaki_exp] - exp).to_f / (exp(rank+1) - exp)
     stone_label.text = stone.to_s
     rewind_stamina
     unless at(:is_stone_gave)
@@ -72,8 +72,8 @@ Plugin.create(:ahiruyaki) do
     # ==== Return
     # Gtk::Button
     def #{m_button.to_s}
-      @#{m_button.to_s} ||= Gtk::Button.new()
-                                  .add(Gtk::HBox.new()
+      @#{m_button.to_s} ||= Gtk::Button.new
+                                  .add(Gtk::HBox.new
                                         .closeup(Gtk::Image.new(Gdk::Pixbuf.new('#{icon}', 64, 64)))
                                         .add(Gtk::VBox.new
                                               .closeup(Gtk::Label.new('#{title}').left)
@@ -84,7 +84,7 @@ Plugin.create(:ahiruyaki) do
     # ==== Return
     # Gtk::Label
     def #{m_label.to_s}
-      @#{m_label.to_s} ||= Gtk::Label.new().set_use_markup(true) end
+      @#{m_label.to_s} ||= Gtk::Label.new.set_use_markup(true) end
 
     # 表示されている強さを更新する
     # ==== Args
@@ -111,7 +111,7 @@ EOE
   defahiruyaki(:friendly_fire,
                price: 1,
                title: "フレンドリーファイア",
-               icon: Skin.get('unfav.png'))
+               icon: Skin.get_path('unfav.png'))
 
   on_appear do |messages|
     messages.lazy.reject(&:from_me?).select{ |message|
@@ -148,7 +148,7 @@ EOE
       add_stone(1, "ランクアップボーナス！")
       rank_label.text = after_rank.to_s
       stamina_max_label.text = stamina_max.to_s
-      exp_progressbar.fraction = (UserConfig[:ahiruyaki_exp] - exp()).to_f / (exp(rank+1) - exp())
+      exp_progressbar.fraction = (UserConfig[:ahiruyaki_exp] - exp).to_f / (exp(rank+1) - exp)
     end
   end
 
@@ -236,7 +236,7 @@ EOE
       Plugin.call(:ahiruyaki_rankup, rank_after)
     else
       activity :ahiruyaki, "#{flash} #{increase.to_i} 経験値獲得"
-      exp_progressbar.fraction = (UserConfig[:ahiruyaki_exp] - exp()).to_f / (exp(rank+1) - exp())
+      exp_progressbar.fraction = (UserConfig[:ahiruyaki_exp] - exp).to_f / (exp(rank+1) - exp)
     end
   end
 
@@ -276,13 +276,13 @@ EOE
   # ==== Return
   # Gtk::Label ランクを表示しているラベル
   def rank_label
-    @rank_label ||= Gtk::Label.new() end
+    @rank_label ||= Gtk::Label.new end
 
   # 現在のスタミナ値を示すプログレスバー
   # ==== Return
   # progressbar
   def exp_progressbar
-    @exp_progressbar ||= Gtk::ProgressBar.new()
+    @exp_progressbar ||= Gtk::ProgressBar.new
                        .set_fraction(0.0)
                        .set_orientation(Gtk::ProgressBar::LEFT_TO_RIGHT)
   end
@@ -291,19 +291,19 @@ EOE
   # ==== Return
   # Gtk::Label ランクを表示しているラベル
   def stamina_value_label
-    @stamina_value_label ||= Gtk::Label.new() end
+    @stamina_value_label ||= Gtk::Label.new end
 
   # スタミナ値の最大を表示するラベル
   # ==== Return
   # Gtk::Label ランクを表示しているラベル
   def stamina_max_label
-    @stamina_max_label ||= Gtk::Label.new() end
+    @stamina_max_label ||= Gtk::Label.new end
 
   # 現在のスタミナ値を示すプログレスバー
   # ==== Return
   # progressbar
   def stamina_progressbar
-    @stamina_progressbar ||= Gtk::ProgressBar.new()
+    @stamina_progressbar ||= Gtk::ProgressBar.new
                            .set_fraction(0.0)
                            .set_orientation(Gtk::ProgressBar::LEFT_TO_RIGHT) end
 
@@ -311,7 +311,7 @@ EOE
   # ==== Return
   # Gtk::Label ランクを表示しているラベル
   def stone_label
-    @stone_label ||= Gtk::Label.new() end
+    @stone_label ||= Gtk::Label.new end
 
   container = Gtk::VBox.new
               .closeup(Gtk::Table.new(6, 2)
@@ -323,7 +323,7 @@ EOE
                         .attach(stone_label.left, 5,6,0,1)
                         .attach(Gtk::Label.new('スタミナ').right, 0,1,1,2)
                         .attach(stamina_progressbar, 1,2,1,2)
-                        .attach(Gtk::HBox.new()
+                        .attach(Gtk::HBox.new
                                  .closeup(stamina_value_label)
                                  .closeup(Gtk::Label.new('/'))
                                  .closeup(stamina_max_label).center, 2,4,1,2)
